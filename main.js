@@ -2,8 +2,26 @@ require('dotenv').config();
 const scrapeLinkedInPosts = require('./scraper/linkedin');
 const extractEmails = require('./utils/extractEmail');
 const { sendEmail } = require('./services/gmailService');
+const { logToGoogleSheets } = require('./services/sheetsService');
 const fs = require('fs');
 const path = require('path');
+
+const SENT_DB_PATH = path.join(__dirname, 'sent_history.json');
+const FAILED_DB_PATH = path.join(__dirname, 'failed_emails.json');
+
+function loadDatabase(filePath) {
+    if (!fs.existsSync(filePath)) return [];
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function saveDatabase(filePath, dataArray) {
+    fs.writeFileSync(filePath, JSON.stringify(dataArray, null, 2));
+}
+
+function hasAlreadyBeenSent(email) {
+    const sentHistory = loadDatabase(SENT_DB_PATH);
+    return sentHistory.includes(email);
+}
 
 async function main() {
     console.log('--- LinkedIn Automation Started ---');
@@ -27,15 +45,15 @@ async function main() {
         }
 
         // 2. Extract Emails
-        const emails = extractEmails(posts);
+        const extractedData = extractEmails(posts);
 
-        if (emails.length === 0) {
+        if (extractedData.length === 0) {
             console.log('[Main] No email addresses found in the posts. Exiting.');
             return;
         }
 
         // 3. Send Emails
-        console.log(`[Main] Preparing to send ${emails.length} emails...`);
+        console.log(`[Main] Preparing to send ${extractedData.length} emails...`);
         
         const emailSubject = "Application for Java Developer Role - via LinkedIn Post";
         const emailBody = `Hi,
@@ -47,13 +65,51 @@ Please find my resume attached for your review. I look forward to hearing from y
 Best regards,
 Prathamesh Deshmukh `;
 
-        for (const email of emails) {
+        const sentHistory = loadDatabase(SENT_DB_PATH);
+        let failedEmails = loadDatabase(FAILED_DB_PATH);
+        
+        const APPLIED_LOG_PATH = path.join(__dirname, 'applied_jobs_log.json');
+        let appliedJobsLog = loadDatabase(APPLIED_LOG_PATH);
+
+        for (const data of extractedData) {
+            const email = data.email;
+            const jd = data.jd;
+
+            // Check if we already messaged them
+            if (hasAlreadyBeenSent(email)) {
+                console.log(`[Main] Already messaged ${email}. Skipping.`);
+                continue;
+            }
+
             try {
                 await sendEmail(email, emailSubject, emailBody, resumePath);
-                // Respectful delay between sends
-                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // Add to our history and save so we never email them again
+                sentHistory.push(email);
+                saveDatabase(SENT_DB_PATH, sentHistory);
+
+                // Add to our JD log so the user knows what they applied for
+                appliedJobsLog.push({ 
+                    email: email, 
+                    date: new Date().toISOString(), 
+                    jd: jd 
+                });
+                saveDatabase(APPLIED_LOG_PATH, appliedJobsLog);
+
+
+                // Save to Google Sheets
+                await logToGoogleSheets(email, jd);
+
+                // Delay between sends (10s to avoid rate limits)
+                await new Promise(resolve => setTimeout(resolve, 10000));
             } catch (err) {
                 console.error(`[Main] Skipping ${email} due to error.`);
+                
+                // Add to failed database
+                if (!failedEmails.includes(email)) {
+                    failedEmails.push(email);
+                    saveDatabase(FAILED_DB_PATH, failedEmails);
+                }
             }
         }
 

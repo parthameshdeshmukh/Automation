@@ -35,14 +35,17 @@ async function sendEmail(toEmail, subject, text, attachmentPath) {
             from: process.env.GMAIL_USER,
             to: toEmail,
             subject: subject,
-            text: text,
-            attachments: [
+            text: text
+        };
+
+        if (attachmentPath) {
+            mailOptions.attachments = [
                 {
                     filename: 'Resume.pdf',
                     path: attachmentPath
                 }
-            ]
-        };
+            ];
+        }
 
         const result = await transporter.sendMail(mailOptions);
         console.log(`[Email] Successfully sent email to: ${toEmail}`);

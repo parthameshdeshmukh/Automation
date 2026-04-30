@@ -4,8 +4,7 @@
   "description": "LinkedIn automation for IT staffing",
   "main": "main.js",
   "scripts": {
-    "start": "node main.js",
-    "test-email": "node test-email.js"
+    "start": "node main.js"
   },
   "dependencies": {
     "dotenv": "^16.0.0",

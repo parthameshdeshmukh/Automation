@@ -55,28 +55,74 @@ async function scrapeLinkedInPosts(keywords) {
             await context.storageState({ path: authFilePath });
         }
 
-        // 3. Search for posts
-        console.log(`[Scraper] Searching for "${keywords}"...`);
-        const searchUrl = `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(keywords)}&origin=GLOBAL_SEARCH_HEADER`;
-        await page.goto(searchUrl);
-        await page.waitForSelector('.search-results-container');
+        // 3. Search for posts across multiple pages
+        console.log(`[Scraper] Searching for "${keywords}" in past 24 hours across multiple pages...`);
+        let allPosts = [];
+        let maxPages = process.env.MAX_PAGES ? parseInt(process.env.MAX_PAGES) : 5; // Default to 5 pages
 
-        // 4. Extract post content
-        console.log('[Scraper] Extracting post contents...');
-        
-        // Scroll a bit to load more content
-        for (let i = 0; i < 3; i++) {
-            await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-            await page.waitForTimeout(2000);
+        for (let currentPage = 1; currentPage <= maxPages; currentPage++) {
+            console.log(`[Scraper] --- Scraping Page ${currentPage} ---`);
+            const searchUrl = `https://www.linkedin.com/search/results/content/?datePosted=%22past-24h%22&keywords=${encodeURIComponent(keywords)}&sortBy=%22date_posted%22&page=${currentPage}`;
+            await page.goto(searchUrl);
+            
+            // Wait for results container or handle timeout (could mean no more results)
+            const hasResults = await page.waitForSelector('.search-results-container', { timeout: 15000 })
+                .then(() => true)
+                .catch(() => false);
+
+            if (!hasResults) {
+                console.log(`[Scraper] No search results container on page ${currentPage}. Ending pagination.`);
+                break;
+            }
+
+            // Scroll down a to ensure lazy-loaded posts in this page are loaded
+            let previousHeight = 0;
+            let attemptsWithNoGrowth = 0;
+
+            for (let i = 0; i < 5; i++) { // Limited scroll per page
+                await page.keyboard.press('End');
+                
+                const randomWait = Math.floor(Math.random() * 2000) + 1500;
+                await page.waitForTimeout(randomWait);
+
+                const currentHeight = await page.evaluate(() => document.body.scrollHeight);
+                if (currentHeight === previousHeight) {
+                    attemptsWithNoGrowth++;
+                    if (attemptsWithNoGrowth >= 2) break;
+                } else {
+                    attemptsWithNoGrowth = 0;
+                    previousHeight = currentHeight;
+                }
+            }
+
+            // Extract posts from the current page
+            const pagePosts = await page.evaluate(() => {
+                // Also adding 'span.break-words' to cover different linkedin post markup variants
+                const postElements = document.querySelectorAll('.update-components-text span[dir="ltr"], .feed-shared-update-v2__description span[dir="ltr"]');
+                return Array.from(postElements).map(el => el.innerText);
+            });
+
+            if (pagePosts.length === 0) {
+                console.log(`[Scraper] No posts found on page ${currentPage}. Ending pagination.`);
+                break;
+            }
+
+            allPosts.push(...pagePosts);
+            console.log(`[Scraper] Found ${pagePosts.length} posts on page ${currentPage}. Total so far: ${allPosts.length}`);
+
+            // If we found less than ~10 posts, it's likely the last page of results
+            if (pagePosts.length < 5) {
+               console.log(`[Scraper] Few results returned on page ${currentPage}, likely last page.`);
+               break;
+            }
+            
+            // Wait a bit before moving to the next page to mimic human behavior
+            const betweenPageWait = Math.floor(Math.random() * 3000) + 2000;
+            await page.waitForTimeout(betweenPageWait);
         }
 
-        const posts = await page.evaluate(() => {
-            const postElements = document.querySelectorAll('.update-components-text span[dir="ltr"]');
-            return Array.from(postElements).map(el => el.innerText);
-        });
-
-        console.log(`[Scraper] Successfully scraped ${posts.length} posts.`);
-        return posts;
+        console.log(`[Scraper] Successfully scraped ${allPosts.length} posts across all accessed pages.`);
+        return allPosts;
 
     } catch (error) {
         console.error('[Scraper] Error during scraping:', error.message);
