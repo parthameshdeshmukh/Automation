@@ -73,7 +73,7 @@ GMAIL_REFRESH_TOKEN=your_refresh_token
 Place your resume as `resume.pdf` in the root folder, then execute:
 ```bash
 node main.js
-```
+```+ 
 
 ---
 

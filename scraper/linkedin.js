@@ -58,7 +58,8 @@ async function scrapeLinkedInPosts(keywords) {
         // 3. Search for posts across multiple pages
         console.log(`[Scraper] Searching for "${keywords}" in past 24 hours across multiple pages...`);
         let allPosts = [];
-        let maxPages = process.env.MAX_PAGES ? parseInt(process.env.MAX_PAGES) : 5; // Default to 5 pages
+        // let maxPages = process.env.MAX_PAGES ? parseInt(process.env.MAX_PAGES) : 5; // Default to 5 pages
+        let maxPages = 1; // Temporarily limited to 1 page per user request
 
         for (let currentPage = 1; currentPage <= maxPages; currentPage++) {
             console.log(`[Scraper] --- Scraping Page ${currentPage} ---`);
@@ -99,7 +100,21 @@ async function scrapeLinkedInPosts(keywords) {
             const pagePosts = await page.evaluate(() => {
                 // Also adding 'span.break-words' to cover different linkedin post markup variants
                 const postElements = document.querySelectorAll('.update-components-text span[dir="ltr"], .feed-shared-update-v2__description span[dir="ltr"]');
-                return Array.from(postElements).map(el => el.innerText);
+                return Array.from(postElements).map(el => {
+                    let postUrl = "Not available";
+                    const container = el.closest('[data-urn]');
+                    if (container) {
+                        const urn = container.getAttribute('data-urn');
+                        if (urn) {
+                            postUrl = `https://www.linkedin.com/feed/update/${urn}/`;
+                        }
+                    } else {
+                        // Fallback: try finding an anchor with activity/share link
+                        const linkEl = el.closest('.feed-shared-update-v2, .search-results-container')?.querySelector('a[href*="urn:li:activity"], a[href*="urn:li:share"]');
+                        if (linkEl) postUrl = linkEl.href.split('?')[0];
+                    }
+                    return { text: el.innerText, postUrl: postUrl };
+                });
             });
 
             if (pagePosts.length === 0) {

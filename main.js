@@ -55,16 +55,6 @@ async function main() {
         // 3. Send Emails
         console.log(`[Main] Preparing to send ${extractedData.length} emails...`);
         
-        const emailSubject = "Application for Java Developer Role - via LinkedIn Post";
-        const emailBody = `Hi,
-
-I saw your recent post on LinkedIn regarding the Java Developer position. I'm very interested in this opportunity and believe my background in Java development makes me a strong candidate.
-
-Please find my resume attached for your review. I look forward to hearing from you.
-
-Best regards,
-Prathamesh Deshmukh `;
-
         const sentHistory = loadDatabase(SENT_DB_PATH);
         let failedEmails = loadDatabase(FAILED_DB_PATH);
         
@@ -74,6 +64,7 @@ Prathamesh Deshmukh `;
         for (const data of extractedData) {
             const email = data.email;
             const jd = data.jd;
+            const postUrl = data.postUrl;
 
             // Check if we already messaged them
             if (hasAlreadyBeenSent(email)) {
@@ -81,8 +72,38 @@ Prathamesh Deshmukh `;
                 continue;
             }
 
+            const emailSubject = "Application for Java Developer Role - via LinkedIn";
+            
+            // Format JD for HTML by replacing newlines with <br>
+            const jdHtml = jd.replace(/\n\n/g, '<br><br>');
+
+            let emailBodyHtml = `
+            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+                <p>Hi,</p>
+                <p>I am writing to express my interest in the Java Developer role you recently shared on LinkedIn.</p>
+                <p>With a strong background in Java development, I am confident that my technical skills and experience make me a great fit for your team.</p>
+                <p>I have attached my resume for your review. For your reference, I have also included a copy of the job description from your post below.</p>
+            `;
+
+            if (postUrl && postUrl !== 'Not available') {
+                emailBodyHtml += `<p>You can also view the original LinkedIn post here: <a href="${postUrl}">${postUrl}</a></p>`;
+            }
+
+            emailBodyHtml += `
+                <p>Thank you for your time and consideration. I look forward to the opportunity to discuss my qualifications with you.</p>
+                <p>Best regards,<br><strong>Prathamesh Deshmukh</strong></p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <h3 style="color: #555;">Job Description Reference:</h3>
+                <div style="background-color: #f4f6f8; padding: 15px; border-left: 4px solid #0a66c2; border-radius: 4px; color: #444; font-size: 0.95em;">
+                    ${jdHtml}
+                </div>
+            </div>`;
+
             try {
-                await sendEmail(email, emailSubject, emailBody, resumePath);
+                // Pass emailBodyHtml instead of plaintext emailBody. We won't attach jd as a txt file anymore.
+                await sendEmail(email, emailSubject, emailBodyHtml, resumePath);
                 
                 // Add to our history and save so we never email them again
                 sentHistory.push(email);

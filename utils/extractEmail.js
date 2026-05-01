@@ -15,15 +15,18 @@ function isValidCandidateEmail(email) {
 }
 
 /**
- * Processes text to extract unique, valid email addresses along with their Job Description.
- * @param {string[]} postTexts - Array of post contents.
- * @returns {Array<{email: string, jd: string}>} - Clean list of objects containing email and jd.
+ * Processes text to extract unique, valid email addresses along with their Job Description and Post Link.
+ * @param {Array<{text: string, postUrl: string}>} posts - Array of post objects.
+ * @returns {Array<{email: string, jd: string, postUrl: string}>} - Clean list of objects containing email, jd, and postUrl.
  */
-function extractEmails(postTexts) {
+function extractEmails(posts) {
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-    const emailToJDMap = new Map();
+    const emailToDataMap = new Map();
 
-    postTexts.forEach(text => {
+    posts.forEach(postObj => {
+        const text = postObj.text || '';
+        const postUrl = postObj.postUrl || 'Not available';
+        
         // Context Check: exclude posts that sound like a candidate asking for a job
         const lowerText = text.toLowerCase();
         if (lowerText.includes("my portfolio") || lowerText.includes("hire me") || lowerText.includes("looking for job")) {
@@ -35,26 +38,35 @@ function extractEmails(postTexts) {
             matches.forEach(email => {
                 const lowerEmail = email.toLowerCase();
                 // Store the first JD found for this email
-                if (!emailToJDMap.has(lowerEmail)) {
-                    // Clean JD: Remove hashtags and unnecessary data
+                if (!emailToDataMap.has(lowerEmail)) {
+                    // Clean JD: Remove hashtags, URLs, and emojis
                     let cleanJD = text.replace(/#[\w-]+\b/g, ''); 
                     cleanJD = cleanJD.replace(/\bhashtag\b/gi, '');
                     cleanJD = cleanJD.replace(/https?:\/\/[^\s]+/g, '');
-                    cleanJD = cleanJD.replace(/\n{3,}/g, '\n\n').trim();
-                    emailToJDMap.set(lowerEmail, cleanJD);
+                    // Remove Emojis
+                    cleanJD = cleanJD.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
+                    
+                    // Normalize spacing and format as structured paragraphs
+                    cleanJD = cleanJD
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0) // Remove empty lines
+                        .join('\n\n'); // Join with double breaks for paragraph structure
+                        
+                    emailToDataMap.set(lowerEmail, { jd: cleanJD, postUrl: postUrl });
                 }
             });
         }
     });
 
     const validResults = [];
-    for (const [email, jd] of emailToJDMap.entries()) {
+    for (const [email, data] of emailToDataMap.entries()) {
         if (isValidCandidateEmail(email)) {
-            validResults.push({ email, jd });
+            validResults.push({ email, jd: data.jd, postUrl: data.postUrl });
         }
     }
     
-    console.log(`[Processor] Extracted ${validResults.length} valid unique emails (out of ${emailToJDMap.size} found).`);
+    console.log(`[Processor] Extracted ${validResults.length} valid unique emails (out of ${emailToDataMap.size} found).`);
     return validResults;
 }
 

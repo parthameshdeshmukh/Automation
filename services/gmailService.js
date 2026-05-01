@@ -5,7 +5,7 @@ require('dotenv').config();
 /**
  * Sends an email with a resume attachment using Gmail OAuth2.
  */
-async function sendEmail(toEmail, subject, text, attachmentPath) {
+async function sendEmail(toEmail, subject, htmlBody, attachmentPath) {
     try {
         const oauth2Client = new google.auth.OAuth2(
             process.env.GMAIL_CLIENT_ID,
@@ -35,7 +35,7 @@ async function sendEmail(toEmail, subject, text, attachmentPath) {
             from: process.env.GMAIL_USER,
             to: toEmail,
             subject: subject,
-            text: text
+            html: htmlBody
         };
 
         if (attachmentPath) {
@@ -48,7 +48,7 @@ async function sendEmail(toEmail, subject, text, attachmentPath) {
         }
 
         const result = await transporter.sendMail(mailOptions);
-        console.log(`[Email] Successfully sent email to: ${toEmail}`);
+        console.log(`[Email] Successfully sent HTML email to: ${toEmail}`);
         return result;
 
     } catch (error) {
