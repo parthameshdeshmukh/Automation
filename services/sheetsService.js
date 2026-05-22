@@ -4,7 +4,7 @@ require('dotenv').config();
 /**
  * Appends a row to Google Sheets with application details.
  */
-async function logToGoogleSheets(email, jd, dateOverride = null) {
+async function logToGoogleSheets(email, jd, dateOverride = null, postUrl = "Not available") {
     if (!process.env.GOOGLE_SHEETS_ID) {
         console.log('[Sheets] GOOGLE_SHEETS_ID is not set in .env. Skipping Google Sheets logging.');
         return;
@@ -30,11 +30,11 @@ async function logToGoogleSheets(email, jd, dateOverride = null) {
 
         await sheets.spreadsheets.values.append({
             spreadsheetId: process.env.GOOGLE_SHEETS_ID,
-            range: 'Sheet1!A:D', // Appending to columns A, B, C, D
+            range: 'Sheet1!A:E', // Appending to columns A, B, C, D, E
             valueInputOption: 'USER_ENTERED',
             requestBody: {
                 values: [
-                    [dateStr, email, safeJd, "Applied successfully"]
+                    [dateStr, email, safeJd, "Applied successfully", postUrl]
                 ]
             }
         });

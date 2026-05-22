@@ -53,7 +53,7 @@ function extractEmails(posts) {
                         .filter(line => line.length > 0) // Remove empty lines
                         .join('\n\n'); // Join with double breaks for paragraph structure
                         
-                    emailToDataMap.set(lowerEmail, { jd: cleanJD, postUrl: postUrl });
+                    emailToDataMap.set(lowerEmail, { jd: cleanJD, postUrl: postUrl, keywords: postObj.keywords });
                 }
             });
         }
@@ -62,7 +62,7 @@ function extractEmails(posts) {
     const validResults = [];
     for (const [email, data] of emailToDataMap.entries()) {
         if (isValidCandidateEmail(email)) {
-            validResults.push({ email, jd: data.jd, postUrl: data.postUrl });
+            validResults.push({ email, jd: data.jd, postUrl: data.postUrl, keywords: data.keywords });
         }
     }
     
@@ -70,4 +70,81 @@ function extractEmails(posts) {
     return validResults;
 }
 
-module.exports = extractEmails;
+function extractFormLinks(posts) {
+    const formRegex = /https?:\/\/(?:[a-zA-Z0-9-]+\.)*(?:google\.com\/forms|forms\.gle|typeform\.com|jotform\.com|forms\.office\.com|surveyheart\.com|linktr\.ee|forms\.app|formstack\.com|docs\.google\.com\/spreadsheets)\/[^\s]+/gi;
+    const formKeywords = ['form', 'apply', 'register', 'link', 'doc', 'sheet', 'registration', 'gform'];
+    const urlRegex = /https?:\/\/[^\s]+/gi;
+
+    const results = [];
+    const seenLinks = new Set();
+
+    posts.forEach(postObj => {
+        const text = postObj.text || '';
+        const postUrl = postObj.postUrl || 'Not available';
+        const authorName = postObj.authorName || 'Unknown Author';
+        
+        // Context Check: exclude posts that sound like a candidate asking for a job
+        const lowerText = text.toLowerCase();
+        if (lowerText.includes("my portfolio") || lowerText.includes("hire me") || lowerText.includes("looking for job")) {
+            return;
+        }
+
+        // Try to find explicit form URLs
+        const foundUrls = [];
+        let match;
+        while ((match = formRegex.exec(text)) !== null) {
+            foundUrls.push(match[0]);
+        }
+
+        // If no explicit form URL, look for any URL if keywords are present
+        if (foundUrls.length === 0) {
+            const hasKeyword = formKeywords.some(kw => lowerText.includes(kw));
+            if (hasKeyword) {
+                // Reset regex index
+                urlRegex.lastIndex = 0;
+                let urlMatch;
+                while ((urlMatch = urlRegex.exec(text)) !== null) {
+                    const url = urlMatch[0];
+                    if (!url.includes('linkedin.com/feed') && !url.includes('linkedin.com/posts')) {
+                        foundUrls.push(url);
+                    }
+                }
+            }
+        }
+
+        if (foundUrls.length > 0) {
+            foundUrls.forEach(url => {
+                // Clean up trailing punctuation
+                let cleanUrl = url.replace(/[.,;:)\]]+$/, '');
+                const key = `${postUrl}_${cleanUrl}`;
+                if (!seenLinks.has(key)) {
+                    seenLinks.add(key);
+
+                    // Clean JD: Remove hashtags, URLs, and emojis
+                    let cleanJD = text.replace(/#[\w-]+\b/g, ''); 
+                    cleanJD = cleanJD.replace(/\bhashtag\b/gi, '');
+                    cleanJD = cleanJD.replace(/https?:\/\/[^\s]+/g, '');
+                    cleanJD = cleanJD.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
+                    
+                    cleanJD = cleanJD
+                        .split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0)
+                        .join('\n\n');
+
+                    results.push({
+                        company: authorName,
+                        postUrl: postUrl,
+                        jd: cleanJD,
+                        formUrl: cleanUrl
+                    });
+                }
+            });
+        }
+    });
+
+    console.log(`[Processor] Extracted ${results.length} registration/form links.`);
+    return results;
+}
+
+module.exports = { extractEmails, extractFormLinks };

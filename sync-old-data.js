@@ -25,7 +25,7 @@ async function syncOldData() {
             const dateObj = new Date(job.date);
             const formattedDate = dateObj.toLocaleString(); // Format like the standard script
 
-            await logToGoogleSheets(job.email, cleanJD, formattedDate);
+            await logToGoogleSheets(job.email, cleanJD, formattedDate, job.postUrl || "Not available");
             console.log(`[${i+1}/${appliedJobs.length}] Synced ${job.email}`);
 
             // Wait 2 seconds between requests to avoid hitting Google Sheets API rate limits

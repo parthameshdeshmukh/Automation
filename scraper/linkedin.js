@@ -28,25 +28,22 @@ async function scrapeLinkedInPosts(keywords) {
 
     try {
         // 1. Navigate to LinkedIn
-        await page.goto('https://www.linkedin.com/feed/');
+        await page.goto('https://www.linkedin.com/feed/', { waitUntil: 'domcontentloaded', timeout: 60000 });
         
         // Wait briefly to see if we are redirected to login
         await page.waitForTimeout(3000);
         
         if (page.url().includes('/login') || page.url().includes('session_redirect')) {
             console.log('[Scraper] Session expired or missing. Attempting password login...');
-            // Try standard login (using stealth typing to avoid bot detection)
-            await page.goto('https://www.linkedin.com/login');
-            
-            // Randomize typing speed to look like a human
-            await page.type('#username', process.env.LINKEDIN_EMAIL, { delay: Math.floor(Math.random() * 100) + 50 });
-            await page.waitForTimeout(500 + Math.random() * 1000); 
-            await page.type('#password', process.env.LINKEDIN_PASSWORD, { delay: Math.floor(Math.random() * 100) + 50 });
-            await page.waitForTimeout(500 + Math.random() * 1000);
-            await page.click('button[type="submit"]');
+            console.log('\n=============================================================');
+            console.log('🛑 [ACTION REQUIRED] LinkedIn is blocking automated login!');
+            console.log('Please log in MANUALLY in the Chrome window that just opened.');
+            console.log('Solve any CAPTCHAs if asked. The script will automatically');
+            console.log('resume once you reach the main LinkedIn feed.');
+            console.log('=============================================================\n');
 
-            console.log('[Scraper] Waiting for feed to load (check for 2FA on browser if stuck)...');
-            await page.waitForURL('**/feed/**', { timeout: 60000 });
+            // Wait up to 3 minutes for the user to manually log in and reach the feed
+            await page.waitForURL('**/feed/**', { timeout: 180000 });
             
             // Save cookies for next time
             if (!fs.existsSync(path.dirname(authFilePath))) {
@@ -56,31 +53,27 @@ async function scrapeLinkedInPosts(keywords) {
         }
 
         // 3. Search for posts across multiple pages
-        console.log(`[Scraper] Searching for "${keywords}" in past 24 hours across multiple pages...`);
+        const dateFilter = process.env.DATE_FILTER || 'past-24h';
+        console.log(`[Scraper] Searching for "${keywords}" in ${dateFilter} across multiple pages...`);
         let allPosts = [];
-        // let maxPages = process.env.MAX_PAGES ? parseInt(process.env.MAX_PAGES) : 5; // Default to 5 pages
-        let maxPages = 1; // Temporarily limited to 1 page per user request
+        let maxPages = process.env.MAX_PAGES ? parseInt(process.env.MAX_PAGES) : 5; // Limit up to 5 pages
 
         for (let currentPage = 1; currentPage <= maxPages; currentPage++) {
+            try {
             console.log(`[Scraper] --- Scraping Page ${currentPage} ---`);
-            const searchUrl = `https://www.linkedin.com/search/results/content/?datePosted=%22past-24h%22&keywords=${encodeURIComponent(keywords)}&sortBy=%22date_posted%22&page=${currentPage}`;
-            await page.goto(searchUrl);
+            const queryKeywords = keywords.replace(/\+/g, 'AND');
+            const searchUrl = `https://www.linkedin.com/search/results/content/?datePosted=%22${dateFilter}%22&keywords=${encodeURIComponent(queryKeywords)}&sortBy=%22date_posted%22&page=${currentPage}`;
+            await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
             
-            // Wait for results container or handle timeout (could mean no more results)
-            const hasResults = await page.waitForSelector('.search-results-container', { timeout: 15000 })
-                .then(() => true)
-                .catch(() => false);
-
-            if (!hasResults) {
-                console.log(`[Scraper] No search results container on page ${currentPage}. Ending pagination.`);
-                break;
-            }
+            // Wait a few seconds for results to populate (LinkedIn UI classes change too often to rely on waitForSelector)
+            await page.waitForTimeout(5000);
 
             // Scroll down a to ensure lazy-loaded posts in this page are loaded
             let previousHeight = 0;
             let attemptsWithNoGrowth = 0;
 
-            for (let i = 0; i < 5; i++) { // Limited scroll per page
+            for (let i = 0; i < 8; i++) { // Increased scroll attempts
+                await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
                 await page.keyboard.press('End');
                 
                 const randomWait = Math.floor(Math.random() * 2000) + 1500;
@@ -89,32 +82,148 @@ async function scrapeLinkedInPosts(keywords) {
                 const currentHeight = await page.evaluate(() => document.body.scrollHeight);
                 if (currentHeight === previousHeight) {
                     attemptsWithNoGrowth++;
-                    if (attemptsWithNoGrowth >= 2) break;
+                    if (attemptsWithNoGrowth >= 3) break;
                 } else {
                     attemptsWithNoGrowth = 0;
                     previousHeight = currentHeight;
                 }
+
+                // Click "See more" buttons to ensure full text extraction
+                await page.evaluate(() => {
+                    const seeMoreButtons = document.querySelectorAll('button[class*="see-more"], .see-more-text, .feed-shared-inline-show-more-text__see-more-less-toggle');
+                    seeMoreButtons.forEach(btn => {
+                        if (btn && typeof btn.click === 'function') btn.click();
+                    });
+                });
             }
 
             // Extract posts from the current page
-            const pagePosts = await page.evaluate(() => {
-                // Also adding 'span.break-words' to cover different linkedin post markup variants
-                const postElements = document.querySelectorAll('.update-components-text span[dir="ltr"], .feed-shared-update-v2__description span[dir="ltr"]');
-                return Array.from(postElements).map(el => {
-                    let postUrl = "Not available";
-                    const container = el.closest('[data-urn]');
-                    if (container) {
-                        const urn = container.getAttribute('data-urn');
-                        if (urn) {
-                            postUrl = `https://www.linkedin.com/feed/update/${urn}/`;
-                        }
-                    } else {
-                        // Fallback: try finding an anchor with activity/share link
-                        const linkEl = el.closest('.feed-shared-update-v2, .search-results-container')?.querySelector('a[href*="urn:li:activity"], a[href*="urn:li:share"]');
-                        if (linkEl) postUrl = linkEl.href.split('?')[0];
+            const pagePosts = await page.evaluate(async () => {
+                // Find all post containers on the search result page
+                const containers = Array.from(document.querySelectorAll('[role="listitem"][componentkey*="FeedType_FLAGSHIP_SEARCH"], .reusable-search__entity-result-list > li, li.reusable-search__result-container'));
+                const results = [];
+                
+                for (let i = 0; i < containers.length; i++) {
+                    const container = containers[i];
+                    
+                    // Find and click "see more" inside this specific container to expand the full post
+                    const seeMoreElements = Array.from(container.querySelectorAll('button, span, a, [role="button"]'));
+                    const seeMoreBtn = seeMoreElements.find(el => {
+                        const txt = (el.innerText || el.textContent || '').trim().toLowerCase();
+                        return txt.includes('see more') || txt.includes('…see more') || txt.includes('...see more');
+                    });
+                    if (seeMoreBtn && typeof seeMoreBtn.click === 'function') {
+                        seeMoreBtn.click();
+                        await new Promise(resolve => setTimeout(resolve, 300));
                     }
-                    return { text: el.innerText, postUrl: postUrl };
-                });
+                    
+                    // Find the expandable text box inside this specific post container
+                    const box = container.querySelector('[data-testid="expandable-text-box"]');
+                    if (!box) continue;
+                    
+                    const text = box.innerText || box.textContent;
+                    if (!text) continue;
+                    
+                    let postUrl = "Not available";
+                    let authorName = "Unknown Author";
+                    
+                    // Try to find the author name by looking for connection level pattern: "Name • connection"
+                    const allElements = Array.from(container.querySelectorAll('*'));
+                    for (const el of allElements) {
+                        const val = (el.innerText || el.textContent).trim();
+                        const match = val.match(/^([^\n•]+)(?:\n)*\s*•\s*(1st|2nd|3rd|Following|Group)/i);
+                        if (match && match[1].trim().length > 0) {
+                            authorName = match[1].trim();
+                            break;
+                        }
+                    }
+                    
+                    // Click control menu button to extract the exact updateUrn from the report link
+                    const menuBtn = container.querySelector('button[aria-label^="Open control menu"]');
+                    if (menuBtn) {
+                        // Make sure any previously opened report link/dropdown is dismissed
+                        const existingReport = document.querySelector('a[href*="report-in-modal"]');
+                        if (existingReport) {
+                            document.body.click();
+                            await new Promise(resolve => setTimeout(resolve, 200));
+                        }
+
+                        menuBtn.click();
+                        
+                        // Wait up to 1000ms for the dropdown report link to appear
+                        await new Promise(resolve => {
+                            let attempts = 0;
+                            const interval = setInterval(() => {
+                                const reportLink = document.querySelector('a[href*="report-in-modal"]');
+                                attempts++;
+                                if (reportLink || attempts > 20) {
+                                    clearInterval(interval);
+                                    resolve();
+                                }
+                            }, 50);
+                        });
+                        
+                        const reportLink = document.querySelector('a[href*="report-in-modal"]');
+                        if (reportLink) {
+                            const href = reportLink.href;
+                            const match = href.match(/updateUrn=([^&]+)/) || href.match(/entityUrn=([^&]+)/);
+                            if (match) {
+                                const urn = decodeURIComponent(match[1]);
+                                postUrl = `https://www.linkedin.com/feed/update/${urn}/`;
+                            }
+                        }
+                        
+                        // Close menu button by clicking it again
+                        menuBtn.click();
+                        
+                        // Wait up to 500ms for the report link to disappear from DOM before moving to the next post
+                        await new Promise(resolve => {
+                            let attempts = 0;
+                            const interval = setInterval(() => {
+                                const reportLink = document.querySelector('a[href*="report-in-modal"]');
+                                attempts++;
+                                if (!reportLink || attempts > 10) {
+                                    clearInterval(interval);
+                                    resolve();
+                                }
+                            }, 50);
+                        });
+                    }
+                    
+                    // Fallback: Try to get URN for the post if menu click failed
+                    if (postUrl === "Not available") {
+                        const tsLink = container.querySelector('.update-components-actor__sub-description a, .feed-shared-actor__sub-description a, a[class*="sub-description"]');
+                        if (tsLink && tsLink.href && (tsLink.href.includes('/feed/update/') || tsLink.href.includes('activity'))) {
+                            postUrl = tsLink.href.split('?')[0];
+                        } else {
+                            const links = Array.from(container.querySelectorAll('a'));
+                            const outer = container.outerHTML;
+                            const urnMatch = outer.match(/urn:li:(activity|ugcPost|share|feed):[0-9]+/);
+                            if (urnMatch) {
+                                postUrl = `https://www.linkedin.com/feed/update/${urnMatch[0]}/`;
+                            } else {
+                                const postLinkEl = links.find(l => {
+                                     const href = l.href;
+                                     // Make sure it's a specific post link, not a general company posts feed
+                                     return (href.includes('/feed/update/') || href.includes('activity')) && 
+                                            !href.includes('/company/');
+                                 });
+                                 if (postLinkEl) {
+                                     const urlMatch = postLinkEl.href.match(/highlightedUpdateUrn=([^&]+)/);
+                                     if (urlMatch) {
+                                         postUrl = `https://www.linkedin.com/feed/update/${decodeURIComponent(urlMatch[1])}/`;
+                                     } else {
+                                         postUrl = postLinkEl.href.split('?')[0];
+                                     }
+                                 }
+                            }
+                        }
+                    }
+                    
+                    results.push({ text, postUrl, authorName });
+                }
+                
+                return results;
             });
 
             if (pagePosts.length === 0) {
@@ -134,6 +243,11 @@ async function scrapeLinkedInPosts(keywords) {
             // Wait a bit before moving to the next page to mimic human behavior
             const betweenPageWait = Math.floor(Math.random() * 3000) + 2000;
             await page.waitForTimeout(betweenPageWait);
+            } catch (pageError) {
+                console.error(`[Scraper] Warning: Error scraping page ${currentPage}:`, pageError.message);
+                console.log(`[Scraper] Breaking pagination loop and returning posts collected so far.`);
+                break;
+            }
         }
 
         console.log(`[Scraper] Successfully scraped ${allPosts.length} posts across all accessed pages.`);

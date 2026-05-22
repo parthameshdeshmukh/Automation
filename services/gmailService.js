@@ -38,6 +38,16 @@ async function sendEmail(toEmail, subject, htmlBody, attachmentPath) {
             html: htmlBody
         };
 
+        // Bypasses CC/BCC for self-notifications, subjects containing "NOTIFICATION", or if DISABLE_CC_BCC is enabled
+        const isNotification = toEmail === process.env.GMAIL_USER || subject.includes("NOTIFICATION");
+        const disableCcBcc = process.env.DISABLE_CC_BCC === 'true';
+        if (!isNotification && !disableCcBcc) {
+            const candidateEmail = process.env.CANDIDATE_EMAIL || process.env.GMAIL_USER;
+            const teamLeadEmail = process.env.TEAM_LEAD_EMAIL || 'quinn@jpitstaffing.com';
+            mailOptions.cc = `${candidateEmail}, ${teamLeadEmail}`;
+            mailOptions.bcc = 'kim@jpitstaffing.com';
+        }
+
         if (attachmentPath) {
             mailOptions.attachments = [
                 {
