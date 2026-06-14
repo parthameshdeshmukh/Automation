@@ -1,0 +1,212 @@
+\documentclass[letterpaper,10pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\setlist[itemize]{noitemsep, topsep=1pt, parsep=0.5pt, partopsep=0pt}
+\usepackage[colorlinks=true, linkcolor=black, urlcolor=blue]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+\usepackage{fontawesome5}
+\usepackage{multicol}
+\setlength{\multicolsep}{-3.0pt}
+\setlength{\columnsep}{-1pt}
+\input{glyphtounicode}
+
+\pagestyle{fancy}
+\fancyhf{} % clear all header and footer fields
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins to fit on 2 pages cleanly
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1.0in}
+\addtolength{\topmargin}{-0.5in}
+\addtolength{\textheight}{1.0in}
+\setlength{\footskip}{4.0pt}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-6pt}\scshape\raggedright\large\bfseries
+}{}{0em}{}[\color{black}\titlerule \vspace{-4pt}]
+
+% Ensure generated PDF is machine readable/ATS parsable
+\pdfgentounicode=1
+
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{#1}\vspace{-2pt}
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-1pt}\item
+    \begin{tabular*}{1.0\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & \textbf{\small #2} \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{1.0\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & \textbf{\small #2}\\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\renewcommand\labelitemi{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.0in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+%----------HEADER----------
+\begin{center}
+    {\Huge \scshape YESHWANTH YELLANKI} \\ \vspace{2pt}
+    \small Wichita, KS ~|~ (316) 932-4488 ~|~ 
+    \href{mailto:yellanki.yeshwanth@gmail.com}{yellanki.yeshwanth@gmail.com} ~|~ 
+    \href{http://www.linkedin.com/in/yesh284}{linkedin.com/in/yesh284}
+\end{center}
+
+%-----------PROFESSIONAL SUMMARY-----------
+\section{Professional Summary}
+\resumeItemListStart
+    \resumeItem{{{summary_s1}}}
+    \resumeItem{{{summary_s2}}}
+    \resumeItem{{{summary_s3}}}
+    \resumeItem{Designed and optimized data processing pipelines, backend integrations, and event driven workflows supporting analytics, reporting, and operational reliability initiatives.}
+    \resumeItem{Experienced collaborating with platform engineering, security, QA, and business stakeholders to deliver reliable systems under production constraints and evolving business requirements.}
+\resumeItemListEnd
+
+%-----------TECHNICAL SKILLS-----------
+\section{Technical Skills}
+\begin{itemize}[leftmargin=0.15in, label={}]
+    \small{\item{
+     {{skills_programming}} \\
+     {{skills_frameworks}} \\
+     {{skills_cloudops}} \\
+     {{skills_architecture}} \\
+     {{skills_tools}} \\
+     {{skills_ai}}
+    }}
+\end{itemize}
+
+%-----------PROFESSIONAL EXPERIENCE-----------
+\section{Professional Experience}
+\resumeSubHeadingListStart
+
+    \resumeSubheading
+      {Software Engineer}{Dec 2025 -- Feb 2026}
+      {TVR Consulting LLC}{Remote, US}
+      \resumeItemListStart
+        \resumeItem{Engineered cloud native ETL workflows using Python and AWS services to process and normalize operational datasets supporting downstream analytics and reporting across multiple business functions.}
+        \resumeItem{Automated ingestion and transformation pipelines handling 200K+ records per execution cycle, reducing manual reconciliation effort by 45\% while improving reporting consistency.}
+        \resumeItem{Optimized relational database queries and indexing strategies across PostgreSQL environments, improving query response times by 35\% under concurrent reporting workloads.}
+        \resumeItem{Implemented monitoring and validation checkpoints within data pipelines to detect schema drift, failed transformations, and incomplete loads before downstream propagation.}
+        \resumeItem{Partnered with analysts and business stakeholders to translate ambiguous reporting requirements into production ready data models and reusable transformation logic.}
+        \resumeItem{Strengthened deployment reliability through standardized environment configuration, logging, and operational runbooks that reduced troubleshooting time during production incidents.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Software Engineer}{Oct 2024 -- Nov 2025}
+      {Experian}{Remote, US}
+      \resumeItemListStart
+        \resumeItem{{{project1_bullet1}}}
+        \resumeItem{{{project1_bullet2}}}
+        \resumeItem{{{project1_bullet3}}}
+        \resumeItem{{{project1_bullet4}}}
+        \resumeItem{Orchestrated automated vulnerability remediation for 30+ Amazon Linux EC2 instances using AWS Systems Manager, patch baselines, and maintenance windows, eliminating configuration drift and reducing manual maintenance cycles.}
+        \resumeItem{Integrated Veracode and SonarQube quality gates into Jenkins CI/CD pipelines, improving code maintainability metrics and reducing critical code quality violations prior to production deployment.}
+        \resumeItem{Contributed to migration of legacy workloads into containerized Docker and Kubernetes environments, improving deployment consistency and enabling scalable microservices delivery across shared infrastructure platforms.}
+        \resumeItem{Built serverless workflow orchestration pipelines using AWS Step Functions and Lambda to support stateful event processing and operational automation across distributed systems.}
+        \resumeItem{Designed AWS infrastructure architecture diagrams documenting EC2 hosted Kafka integrations, downstream analytics flows, and cross account communication patterns used by engineering and platform teams.}
+        \resumeItem{Led production deployment activities including change request approvals, release coordination, rollback validation, and post deployment issue resolution for business critical application updates.}
+        \resumeItem{Authored operational documentation, deployment procedures, and troubleshooting guides that improved onboarding efficiency and reduced dependency on tribal knowledge across engineering teams.}
+        \resumeItem{Collaborated with security, platform engineering, QA, and business stakeholders throughout the SDLC to improve release quality, deployment governance, and production stability.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Database Specialist}{Jul 2023 -- Oct 2023}
+      {Ticket Socket Inc}{Remote, US}
+      \resumeItemListStart
+        \resumeItem{Managed large scale Excel based operational datasets supporting venue allocation and seating logistics for FIBA World Cup event preparation across multiple venues and stakeholder groups.}
+        \resumeItem{Validated and reconciled structured event data to improve downstream reporting accuracy and reduce inconsistencies impacting logistics coordination and operational planning.}
+        \resumeItem{Automated repetitive data validation workflows and spreadsheet reconciliation tasks, reducing manual processing effort and improving turnaround time for operational reporting requests.}
+        \resumeItem{Coordinated with event operations teams to resolve data discrepancies under tight delivery timelines while maintaining data integrity across rapidly changing scheduling requirements.}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Software Engineer}{Nov 2021 -- Aug 2022}
+      {Cognizant Technology Solutions}{Hyderabad, India}
+      \resumeItemListStart
+        \resumeItem{{{project2_bullet1}}}
+        \resumeItem{{{project2_bullet2}}}
+        \resumeItem{{{project2_bullet3}}}
+        \resumeItem{{{project2_bullet4}}}
+        \resumeItem{Implemented automated unit and integration testing frameworks using Jest and Cypress, increasing frontend test coverage by 30\% and improving release confidence across development cycles.}
+        \resumeItem{Participated in Agile delivery processes including sprint planning, code reviews, defect resolution, and collaborative debugging to improve delivery quality and reduce regression issues.}
+        \resumeItem{Contributed to reusable UI component development and API integration efforts that accelerated feature delivery timelines across multiple project modules.}
+      \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------TECHNICAL PROJECTS-----------
+\section{Technical Projects}
+\resumeSubHeadingListStart
+
+    \resumeProjectHeading
+      {\textbf{AI Powered Resume Builder} $|$ \emph{React, Tailwind CSS, OpenAI, Node.js, ATS Scoring, Strapi, Vite}}{2025}
+      \resumeItemListStart
+        \resumeItem{Architected and developed a full-stack AI powered resume platform enabling dynamic resume generation, ATS scoring, and content optimization using OpenAI APIs and Node.js backend services.}
+        \resumeItem{Built responsive frontend workflows using React and Tailwind CSS, enabling users to create, edit, and export resumes through optimized multi step interfaces.}
+        \resumeItem{Integrated AI driven recommendation workflows to generate contextual resume suggestions and improve keyword alignment for ATS compatibility.}
+        \resumeItem{Implemented authentication and session management using Clerk while securing API interactions and user specific document operations.}
+        \resumeItem{Designed reusable REST API integrations and modular frontend components to support maintainability and future feature scalability.}
+        \resumeItem{Deployed production ready application architecture using Vite and modern frontend build optimization techniques.}
+      \resumeItemListEnd
+
+    \resumeProjectHeading
+      {\textbf{Diabetic Retinopathy Classification} $|$ \emph{Deep Learning, CNN, Binary Classification}}{2022}
+      \resumeItemListStart
+        \resumeItem{Developed a CNN based image classification model for diabetic retinopathy detection using large scale retinal image datasets and supervised deep learning techniques.}
+        \resumeItem{Improved model accuracy from 92\% to 98\% through iterative hyperparameter tuning, architecture refinement, and overfitting reduction strategies.}
+        \resumeItem{Applied preprocessing, validation, and training optimization techniques to improve model generalization across unseen clinical image samples.}
+        \resumeItem{Evaluated model performance using classification metrics and validation datasets to ensure prediction reliability and consistency.}
+      \resumeItemListEnd
+
+\resumeSubHeadingListEnd
+
+%-----------CERTIFICATIONS AND PUBLICATIONS-----------
+\section{Certifications and Research Publications}
+\resumeItemListStart
+    \resumeItem{\textbf{AWS Certified Cloud Practitioner} $|$ View Certification (Mar 2026)}
+    \resumeItem{\textbf{E Challan System for Non-Parking Areas} $|$ View Publication (Apr 2021)}
+\resumeItemListEnd
+
+%-----------EDUCATION-----------
+\section{Education}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {Wichita State University}{Wichita, KS}
+    {Master of Science in Data Science}{May 2024}
+  \resumeSubheading
+    {SCSVMV University}{Tamil Nadu, India}
+    {Bachelor of Engineering in Computer Science and Engineering}{May 2021}
+\resumeSubHeadingListEnd
+
+\end{document}

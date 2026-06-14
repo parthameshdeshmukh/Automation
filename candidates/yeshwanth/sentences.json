@@ -1,0 +1,19 @@
+{
+  "summary_s1": "Dedicated Software Engineer with 3+ years of experience delivering reliable and scalable software solutions.",
+  "summary_s2": "Skilled in full-stack development using HTML, CSS, JavaScript, and TypeScript, with experience building responsive interfaces using Bootstrap and collaborating across teams to resolve issues quickly.",
+  "summary_s3": "Experienced in building enterprise applications using Spring Boot, secure REST APIs, and microservices, while following engineering best practices to improve quality, performance, and system reliability across the Software Development Lifecycle.",
+  "skills_programming": "Programming & Database: Python, Java, JavaScript, TypeScript, C, C++, SQL, MongoDB, PostgreSQL, MySQL",
+  "skills_frameworks": "Frameworks & Libraries: React, Angular, Redux, Spring Boot, Node.js, Tailwind CSS, Bootstrap, REST API, GraphQL, JWT, OAuth, Kafka, Cypress",
+  "skills_cloudops": "Cloud & DevOps: AWS(EC2,S3,RDS,NLB,ECR), Firebase, Docker, Kubernetes, Terraform, Jenkins, CI/CD",
+  "skills_architecture": "Architecture & Development: Microservices, Enterprise Application Development, API Design, Software Development Lifecycle Testing: Cypress, Jest, Jasmine, Cucumber",
+  "skills_tools": "Tools & Practices: Git, Atlassian (Jira, Confluence), Postman, Veracode, SonarQube, Agile, Design Pattern, Code Reviews",
+  "skills_ai": "AI & Emerging Technologies: GenAI, LLM, Machine Learning, Deep Learning",
+  "project1_bullet1": "Built and maintained scalable backend services using Python and Flask, designing secure REST APIs with authentication, error handling, and structured logging, leading to faster issue resolution and a 30% increase in system reliability.",
+  "project1_bullet2": "Designed and implemented AWS IAM roles and policies with Terraform to strengthen security, enforce least-privilege access, and support successful security audit outcomes.",
+  "project1_bullet3": "Developed Python scripts using Jira REST APIs to automate analysis, field mapping, and issue migration, streamlining the Jira-to-Agile transition for North America projects and reducing manual workload by 50%.",
+  "project1_bullet4": "Collaborated using Atlassian tools (Jira, Confluence) and Git-based workflows to track work, improve delivery quality, and maintain end-to-end ownership of changes.",
+  "project2_bullet1": "Completed Java Full Stack Engineer training in 6 months, contributing to tools that improved system response time by 30% for the client project.",
+  "project2_bullet2": "Implemented unit and integration tests using Jest and Cypress for the React Components, increasing test coverage by 30% and ensuring high code quality and maintainability across Projects.",
+  "project2_bullet3": "Built a performance-optimized server-side rendered table with pagination and sorting using React, Node.js, and REST APIs, reducing load times and enhancing UI.",
+  "project2_bullet4": "Built enterprise-style backend services using Spring Boot concepts and modern web development practices, strengthening API development and microservices understanding."
+}

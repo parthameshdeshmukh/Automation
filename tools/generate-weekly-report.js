@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const APPLIED_LOG_PATH = path.join(__dirname, 'applied_jobs_log.json');
+const APPLIED_LOG_PATH = path.join(__dirname, '..', 'data', 'applied_jobs_log.json');
 
 function generateReport() {
     if (!fs.existsSync(APPLIED_LOG_PATH)) {
@@ -85,7 +85,7 @@ function generateReport() {
 </body>
 </html>`;
 
-    const reportPath = path.join(__dirname, 'weekly-dashboard.html');
+    const reportPath = path.join(__dirname, '..', 'weekly-dashboard.html');
     fs.writeFileSync(reportPath, htmlContent);
     console.log(`✅ 3D Pie Chart Report generated successfully!`);
 }

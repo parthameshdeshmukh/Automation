@@ -5,13 +5,38 @@ function isValidCandidateEmail(email) {
     const blockList = ['support', 'info', 'careers', 'help', 'no-reply', 'admin', 'example'];
     const lowerEmail = email.toLowerCase();
     
-    const isBlocked = blockList.some(blockedWord => lowerEmail.includes(blockedWord));
+    const parts = lowerEmail.split('@');
+    if (parts.length < 2) return false;
+    const username = parts[0];
+    
+    const isBlocked = blockList.some(blockedWord => {
+        return username === blockedWord || 
+               username.startsWith(blockedWord + '.') || 
+               username.startsWith(blockedWord + '_') || 
+               username.startsWith(blockedWord + '-');
+    });
     
     if (isBlocked) {
         console.log(`[Processor] Skipping generic/blocked email type: ${email}`);
         return false;
     }
     return true;
+}
+
+/**
+ * Helper to translate obfuscated emails (e.g. john [at] company.com) to standard ones.
+ */
+function deobfuscateText(text) {
+    if (!text) return '';
+    return text
+        .replace(/\s*\[at\]\s*/gi, '@')
+        .replace(/\s*\(at\)\s*/gi, '@')
+        .replace(/\s*\{at\}\s*/gi, '@')
+        .replace(/\s+at\s+/gi, '@')
+        .replace(/\s*\[dot\]\s*/gi, '.')
+        .replace(/\s*\(dot\)\s*/gi, '.')
+        .replace(/\s*\{dot\}\s*/gi, '.')
+        .replace(/\s+dot\s+/gi, '.');
 }
 
 /**
@@ -33,13 +58,40 @@ function extractEmails(posts) {
             return; // likely another candidate, not HR
         }
 
-        const matches = text.match(emailRegex);
+        // Skip if LinkedIn Easy Apply or general apply portals/keywords are present
+        if (lowerText.includes("easy apply") || lowerText.includes("linkedin easy apply") || lowerText.includes("apply link") || lowerText.includes("apply on") || lowerText.includes("apply at") || lowerText.includes("apply here")) {
+            console.log(`[Processor] Skipping post because it mentions easy apply / external portals: ${postUrl}`);
+            return;
+        }
+
+        // Skip if there are any other HTTP/HTTPS/WWW URLs in the text (recruiter should only have specified email)
+        const urlRegex = /https?:\/\/[^\s]+|www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*/gi;
+        if (urlRegex.test(text)) {
+            console.log(`[Processor] Skipping post because it contains another link/URL: ${postUrl}`);
+            return;
+        }
+
+        // Skip posts containing registration/form links or terms
+        const formRegex = /https?:\/\/(?:[a-zA-Z0-9-]+\.)*(?:google\.com\/forms|forms\.gle|typeform\.com|jotform\.com|forms\.office\.com|surveyheart\.com|linktr\.ee|forms\.app|formstack\.com|docs\.google\.com\/spreadsheets)\/[^\s]+/gi;
+        if (formRegex.test(text)) {
+            console.log(`[Processor] Skipping post because it contains a registration/form link: ${postUrl}`);
+            return;
+        }
+        if (lowerText.includes("google form") || lowerText.includes("registration link") || lowerText.includes("apply link") || lowerText.includes("form link") || lowerText.includes("fill out the form") || lowerText.includes("fill the form")) {
+            console.log(`[Processor] Skipping post because of registration keywords: ${postUrl}`);
+            return;
+        }
+
+        // De-obfuscate a copy of the text for email matching
+        const textForExtraction = deobfuscateText(text);
+
+        const matches = textForExtraction.match(emailRegex);
         if (matches) {
             matches.forEach(email => {
                 const lowerEmail = email.toLowerCase();
                 // Store the first JD found for this email
                 if (!emailToDataMap.has(lowerEmail)) {
-                    // Clean JD: Remove hashtags, URLs, and emojis
+                    // Clean JD: Remove hashtags, URLs, and emojis from original text
                     let cleanJD = text.replace(/#[\w-]+\b/g, ''); 
                     cleanJD = cleanJD.replace(/\bhashtag\b/gi, '');
                     cleanJD = cleanJD.replace(/https?:\/\/[^\s]+/g, '');

@@ -10,7 +10,7 @@ const authFilePath = path.join(__dirname, '..', '.auth', 'state.json');
 /**
  * Scrapes LinkedIn posts based on keywords.
  */
-async function scrapeLinkedInPosts(keywords) {
+async function scrapeLinkedInPosts(keywords, targetEmailsCount = 25) {
     console.log(`[Scraper] Starting LinkedIn scraper for: "${keywords}"`);
     
     const browser = await chromium.launch({ headless: false }); // Visible for manual login/2FA if needed
@@ -65,24 +65,24 @@ async function scrapeLinkedInPosts(keywords) {
             const searchUrl = `https://www.linkedin.com/search/results/content/?datePosted=%22${dateFilter}%22&keywords=${encodeURIComponent(queryKeywords)}&sortBy=%22date_posted%22&page=${currentPage}`;
             await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
             
-            // Wait a few seconds for results to populate (LinkedIn UI classes change too often to rely on waitForSelector)
-            await page.waitForTimeout(5000);
+            // Wait briefly for results to populate
+            await page.waitForTimeout(2500);
 
-            // Scroll down a to ensure lazy-loaded posts in this page are loaded
+            // Scroll down to ensure lazy-loaded posts in this page are loaded
             let previousHeight = 0;
             let attemptsWithNoGrowth = 0;
 
-            for (let i = 0; i < 8; i++) { // Increased scroll attempts
+            for (let i = 0; i < 3; i++) { // Reduced scroll attempts (search result page only has 10 posts)
                 await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
                 await page.keyboard.press('End');
                 
-                const randomWait = Math.floor(Math.random() * 2000) + 1500;
+                const randomWait = Math.floor(Math.random() * 800) + 800; // Reduced scroll delay (0.8s to 1.6s)
                 await page.waitForTimeout(randomWait);
 
                 const currentHeight = await page.evaluate(() => document.body.scrollHeight);
                 if (currentHeight === previousHeight) {
                     attemptsWithNoGrowth++;
-                    if (attemptsWithNoGrowth >= 3) break;
+                    if (attemptsWithNoGrowth >= 2) break;
                 } else {
                     attemptsWithNoGrowth = 0;
                     previousHeight = currentHeight;
@@ -233,6 +233,15 @@ async function scrapeLinkedInPosts(keywords) {
 
             allPosts.push(...pagePosts);
             console.log(`[Scraper] Found ${pagePosts.length} posts on page ${currentPage}. Total so far: ${allPosts.length}`);
+
+            // Check if we have gathered enough emails to satisfy the target
+            const { extractEmails } = require('../utils/extractEmail');
+            const mapped = allPosts.map(p => ({ ...p, keywords }));
+            const currentLeadsCount = extractEmails(mapped).length;
+            if (currentLeadsCount >= targetEmailsCount) {
+                console.log(`[Scraper] Reached target of ${targetEmailsCount} emails (found ${currentLeadsCount}) on page ${currentPage}. Stopping pagination.`);
+                break;
+            }
 
             // If we found less than ~10 posts, it's likely the last page of results
             if (pagePosts.length < 5) {

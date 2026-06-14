@@ -5,7 +5,7 @@ require('dotenv').config();
 /**
  * Sends an email with a resume attachment using Gmail OAuth2.
  */
-async function sendEmail(toEmail, subject, htmlBody, attachmentPath) {
+async function sendEmail(toEmail, subject, htmlBody, attachmentPath, ccEmail = null) {
     try {
         const oauth2Client = new google.auth.OAuth2(
             process.env.GMAIL_CLIENT_ID,
@@ -42,9 +42,8 @@ async function sendEmail(toEmail, subject, htmlBody, attachmentPath) {
         const isNotification = toEmail === process.env.GMAIL_USER || subject.includes("NOTIFICATION");
         const disableCcBcc = process.env.DISABLE_CC_BCC === 'true';
         if (!isNotification && !disableCcBcc) {
-            const candidateEmail = process.env.CANDIDATE_EMAIL || process.env.GMAIL_USER;
-            const teamLeadEmail = process.env.TEAM_LEAD_EMAIL || 'quinn@jpitstaffing.com';
-            mailOptions.cc = `${candidateEmail}, ${teamLeadEmail}`;
+            const candidateEmail = ccEmail || process.env.CANDIDATE_EMAIL || process.env.GMAIL_USER;
+            mailOptions.cc = candidateEmail;
             mailOptions.bcc = 'kim@jpitstaffing.com';
         }
 

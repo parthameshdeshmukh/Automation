@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
-const { logToGoogleSheets } = require('./services/sheetsService');
+const { logToGoogleSheets } = require('../services/sheetsService');
 
 async function syncOldData() {
-    const APPLIED_LOG_PATH = path.join(__dirname, 'applied_jobs_log.json');
+    const APPLIED_LOG_PATH = path.join(__dirname, '..', 'data', 'applied_jobs_log.json');
     if (!fs.existsSync(APPLIED_LOG_PATH)) {
         console.log("No applied_jobs_log.json found.");
         return;

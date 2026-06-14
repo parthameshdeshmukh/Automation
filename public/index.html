@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Outreach & Acquisition Dashboard</title>
+    <!-- Outfit Font for premium tech look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="pulse-indicator"></div>
+                <h2>IT Staffing AI</h2>
+                <span class="subtext">Outreach Controller</span>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-tab="overview">
+                    <span class="icon">📊</span> Overview
+                </button>
+                <button class="nav-btn" data-tab="candidates">
+                    <span class="icon">👤</span> Candidates & Leads
+                </button>
+                <button class="nav-btn" data-tab="history">
+                    <span class="icon">✉️</span> Outreach History
+                </button>
+                <button class="nav-btn" data-tab="failed">
+                    <span class="icon">⚠️</span> Failed Logs
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator-box">
+                    <span class="dot active"></span>
+                    <span class="label">Pipeline: Active</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Body -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 id="page-title">Dashboard Overview</h1>
+                    <p class="subtitle" id="page-subtitle">Real-time stats and candidate pipeline monitoring</p>
+                </div>
+                <div class="header-right">
+                    <button id="refresh-btn" class="primary-btn">🔄 Refresh Data</button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="content-body">
+                
+                <!-- 1. OVERVIEW TAB -->
+                <section id="tab-overview" class="tab-section active">
+                    <!-- Stat Widget Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card blue">
+                            <div class="stat-header">
+                                <span class="stat-icon">👥</span>
+                                <span class="card-label">Active Candidates</span>
+                            </div>
+                            <h2 class="stat-value" id="stats-candidates">0</h2>
+                            <p class="stat-footer">Processing files locally</p>
+                        </div>
+                        <div class="stat-card indigo">
+                            <div class="stat-header">
+                                <span class="stat-icon">🔍</span>
+                                <span class="card-label">Scraped Lead Queue</span>
+                            </div>
+                            <h2 class="stat-value" id="stats-leads">0</h2>
+                            <p class="stat-footer">Stored in scraped_leads.json</p>
+                        </div>
+                        <div class="stat-card green">
+                            <div class="stat-header">
+                                <span class="stat-icon">🚀</span>
+                                <span class="card-label">Outreach Emails Sent</span>
+                            </div>
+                            <h2 class="stat-value" id="stats-sent">0</h2>
+                            <p class="stat-footer">Logged to applied_jobs_log.json</p>
+                        </div>
+                        <div class="stat-card orange">
+                            <div class="stat-header">
+                                <span class="stat-icon">⚠️</span>
+                                <span class="card-label">Failed Deliveries</span>
+                            </div>
+                            <h2 class="stat-value" id="stats-failed">0</h2>
+                            <p class="stat-footer">Stored in failed_emails.json</p>
+                        </div>
+                    </div>
+
+                    <!-- Visual Summary Panel -->
+                    <div class="panels-grid">
+                        <div class="content-panel">
+                            <h3>AI Tailoring Success</h3>
+                            <div class="customization-bar-container">
+                                <div class="progress-bar">
+                                    <div id="ai-progress" class="bar-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="progress-labels">
+                                    <span id="ai-customized-text">AI Tailored: 0</span>
+                                    <span id="fallback-text">Static Fallbacks: 0</span>
+                                </div>
+                            </div>
+                            <div class="metric-note">
+                                <span class="note-bullet">ℹ️</span>
+                                <p><strong>Fallback Mode</strong> triggers automatically if the Gemini API rate limits or runs out of daily free-tier quota.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. CANDIDATES TAB -->
+                <section id="tab-candidates" class="tab-section">
+                    <div class="candidates-split-layout">
+                        <!-- Left candidate column -->
+                        <div class="candidates-sidebar card-panel">
+                            <h3>Select Candidate</h3>
+                            <div class="candidate-list" id="candidates-selector">
+                                <!-- Dynamic candidate items -->
+                            </div>
+                        </div>
+
+                        <!-- Right details area -->
+                        <div class="candidate-leads-area">
+                            <div class="card-panel" id="candidate-profile-panel" style="display: none;">
+                                <div class="profile-header-row">
+                                    <div>
+                                        <h2 id="cand-profile-name">Candidate Name</h2>
+                                        <p id="cand-profile-meta" class="subtext">Experience | Location</p>
+                                    </div>
+                                    <button class="danger-btn" id="clear-leads-btn">🗑️ Clear Scraped Leads</button>
+                                </div>
+                                
+                                <div class="profile-details-grid">
+                                    <div class="detail-box">
+                                        <strong>Email:</strong> <span id="cand-profile-email"></span>
+                                    </div>
+                                    <div class="detail-box">
+                                        <strong>Phone:</strong> <span id="cand-profile-phone"></span>
+                                    </div>
+                                    <div class="detail-box">
+                                        <strong>Work Auth:</strong> <span id="cand-profile-auth"></span>
+                                    </div>
+                                    <div class="detail-box">
+                                        <strong>Target Criteria:</strong> <span id="cand-profile-criteria"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-panel margin-top">
+                                <div class="panel-header-search">
+                                    <h3>Scraped Lead Queue</h3>
+                                    <input type="text" id="search-leads" placeholder="🔍 Filter leads by email or keywords..." class="search-input">
+                                </div>
+                                <div class="table-container">
+                                    <table class="leads-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Recruiter Email</th>
+                                                <th>Search Keywords</th>
+                                                <th>Post Link</th>
+                                                <th>Job Description</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="leads-table-body">
+                                            <tr>
+                                                <td colspan="4" class="empty-state">Select a candidate to view scraped leads.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. HISTORY TAB -->
+                <section id="tab-history" class="tab-section">
+                    <div class="card-panel">
+                        <div class="panel-header-search">
+                            <div>
+                                <h3>Applied Outreach Log</h3>
+                                <p class="panel-desc">All applications successfully executed via the outreach pipeline</p>
+                            </div>
+                            <input type="text" id="search-history" placeholder="🔍 Search by candidate, email, or JD..." class="search-input">
+                        </div>
+                        <div class="table-container">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Candidate</th>
+                                        <th>Recruiter Email</th>
+                                        <th>Gemini API Status</th>
+                                        <th>Outreach Post Link</th>
+                                        <th>Resume PDF</th>
+                                        <th>Job Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. FAILED TAB -->
+                <section id="tab-failed" class="tab-section">
+                    <div class="card-panel">
+                        <div class="panel-header-search">
+                            <div>
+                                <h3>Failed Deliveries Log</h3>
+                                <p class="panel-desc">Emails that encountered network errors or delivery failures</p>
+                            </div>
+                            <input type="text" id="search-failed" placeholder="🔍 Search failed list..." class="search-input">
+                        </div>
+                        <div class="table-container">
+                            <table class="failed-table">
+                                <thead>
+                                    <tr>
+                                        <th>Recruiter Email</th>
+                                        <th>Status</th>
+                                        <th>Suggested Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="failed-table-body">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div id="pdf-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="pdf-modal-title">Tailored Resume Preview</h3>
+                <button class="close-modal" id="close-pdf-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <iframe id="pdf-iframe" src="" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
