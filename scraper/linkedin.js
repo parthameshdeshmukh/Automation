@@ -244,10 +244,13 @@ async function scrapeLinkedInPosts(keywords, targetEmailsCount = 25) {
             }
 
             // If we found less than ~10 posts, it's likely the last page of results
+            // Commented out to ensure pagination continues up to MAX_PAGES as requested by the user
+            /*
             if (pagePosts.length < 5) {
                console.log(`[Scraper] Few results returned on page ${currentPage}, likely last page.`);
                break;
             }
+            */
             
             // Wait a bit before moving to the next page to mimic human behavior
             const betweenPageWait = Math.floor(Math.random() * 3000) + 2000;
