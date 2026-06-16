@@ -11,6 +11,8 @@
   "portfolio": "",
   "teamLeadEmail": "quinn@jpitstaffing.com",
   "searchCriteria": [
-    "\"PYTHON DEVELOPER\" AND (fulltime OR W2)- c2c-hotlist-available"
+    "\"PYTHON DEVELOPER\" AND (fulltime OR W2)- c2c-hotlist-available",
+    "\"Backend\" AND \"Python\" AND (W2 OR \"full-time\") -c2c"
+
   ]
 }

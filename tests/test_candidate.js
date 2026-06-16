@@ -107,6 +107,11 @@ async function testCandidate(candidateName) {
     let allPassed = true;
 
     for (const c of candidates) {
+        const candidateDir = path.join(__dirname, '..', 'candidates', c);
+        if (!fs.existsSync(candidateDir)) {
+            console.log(`\n[Test] Candidate directory for "${c}" does not exist. Skipping.`);
+            continue;
+        }
         const passed = await testCandidate(c);
         if (!passed) allPassed = false;
     }

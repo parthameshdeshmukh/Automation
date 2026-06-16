@@ -58,6 +58,36 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// ── JSON EXTRACTOR helper ────────────────────────────────────────────────────
+function extractJsonFromString(str) {
+    if (!str) return null;
+    
+    // First, try direct parse
+    try {
+        return JSON.parse(str.trim());
+    } catch (_) {}
+    
+    // Next, try extracting text inside markdown code fences
+    const fenceMatch = str.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (fenceMatch && fenceMatch[1]) {
+        try {
+            return JSON.parse(fenceMatch[1].trim());
+        } catch (_) {}
+    }
+    
+    // Finally, try to find the first '{' and the last '}' and parse that substring
+    const firstBrace = str.indexOf('{');
+    const lastBrace = str.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        const jsonCandidate = str.substring(firstBrace, lastBrace + 1);
+        try {
+            return JSON.parse(jsonCandidate.trim());
+        } catch (_) {}
+    }
+    
+    return null;
+}
+
 // ── RETRY wrapper with exponential back-off ──────────────────────────────────
 async function callGeminiWithRetry(model, prompt, maxRetries = 4) {
     let attempt = 0;
@@ -75,20 +105,22 @@ async function callGeminiWithRetry(model, prompt, maxRetries = 4) {
             }
 
             const is429 = err.message && err.message.includes('429');
+            const is503 = err.message && (err.message.includes('503') || err.message.toLowerCase().includes('service unavailable') || err.message.toLowerCase().includes('high demand'));
+            
             // Extract retry-after from error message if present
             const retryMatch = err.message && err.message.match(/retry in (\d+(?:\.\d+)?)s/i);
             const retryAfterMs = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) * 1000 : 0;
 
-            if (is429 && attempt < maxRetries) {
+            if ((is429 || is503) && attempt < maxRetries) {
                 const backoffMs = retryAfterMs > 0
                     ? retryAfterMs + 2000                       // honour server hint + 2s buffer
                     : Math.min(60000, 5000 * Math.pow(2, attempt)); // 5s, 10s, 20s, 40s, 60s cap
 
-                console.warn(`[Gemini] Rate-limited (429). Waiting ${Math.round(backoffMs / 1000)}s before retry ${attempt + 1}/${maxRetries}...`);
+                console.warn(`[Gemini] Error encountered (${is503 ? '503 High Demand' : '429 Rate-limit'}). Waiting ${Math.round(backoffMs / 1000)}s before retry ${attempt + 1}/${maxRetries}...`);
                 await sleep(backoffMs);
                 attempt++;
             } else {
-                throw err; // non-429 or exhausted retries
+                throw err; // non-transient or exhausted retries
             }
         }
     }
@@ -107,8 +139,8 @@ async function callGeminiWithFallback(prompt, isJson = false, maxRetries = 2) {
         throw new Error('GoogleGenerativeAI is not initialized (GEMINI_API_KEY is missing).');
     }
 
-    const modelName = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-    const modelsToTry = [modelName, 'gemini-2.5-flash', 'gemini-flash-latest'];
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+    const modelsToTry = [modelName, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-flash-latest'];
     
     let lastError = null;
 
@@ -131,8 +163,8 @@ async function callGeminiWithFallback(prompt, isJson = false, maxRetries = 2) {
                 lastError = err;
                 const isQuota = err.message && err.message.toLowerCase().includes('quota');
                 if (isQuota) {
-                    console.warn(`[Gemini] Model ${mName} hit rate limit/quota using key index ${currentKeyIndex}.`);
-                    break; // break the model loop to try the next API key!
+                    console.warn(`[Gemini] Model ${mName} hit rate limit/quota using key index ${currentKeyIndex}. Trying next model...`);
+                    continue; // try the next model on the same key!
                 } else {
                     throw err; // non-quota error, fail immediately
                 }
@@ -203,14 +235,11 @@ Do NOT wrap in markdown fences. Do NOT include any other text outside the JSON.
 `;
 
         const responseTextRaw = await callGeminiWithFallback(prompt, true, 4);
-        let responseText = responseTextRaw;
-
-        // Strip markdown fences if model wraps anyway
-        if (responseText.startsWith('```')) {
-            responseText = responseText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/, '').trim();
+        const data = extractJsonFromString(responseTextRaw);
+        if (!data) {
+            console.error(`[Gemini] JSON parsing failed. Full raw response was:\n----------------\n${responseTextRaw}\n----------------`);
+            throw new Error(`Failed to extract valid JSON from model response.`);
         }
-
-        const data = JSON.parse(responseText);
         const resultObject = { isFallback: false };
 
         for (const key in originalSentences) {

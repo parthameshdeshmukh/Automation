@@ -61,7 +61,20 @@ async function scrapeLinkedInPosts(keywords, targetEmailsCount = 25) {
         for (let currentPage = 1; currentPage <= maxPages; currentPage++) {
             try {
             console.log(`[Scraper] --- Scraping Page ${currentPage} ---`);
-            const queryKeywords = keywords.replace(/\+/g, 'AND');
+            let queryKeywords = keywords.replace(/\+/g, 'AND');
+            
+            // Auto-sanitize common query formatting typos (e.g. missing space before/after hyphens)
+            // Fixes "W2)- c2c" to "W2) -c2c" and "W2)-c2c" to "W2) -c2c"
+            queryKeywords = queryKeywords.replace(/([a-zA-Z0-9)])-\s*(\w+)/g, '$1 -$2');
+            
+            // Fixes standalone " - c2c" to " -c2c"
+            queryKeywords = queryKeywords.replace(/(?:^|\s)-\s+(\w+)/g, ' -$1');
+            
+            // Fix multiple spaces
+            queryKeywords = queryKeywords.replace(/\s+/g, ' ');
+            
+            console.log(`[Scraper] Searching for sanitized query: "${queryKeywords}"`);
+
             const searchUrl = `https://www.linkedin.com/search/results/content/?datePosted=%22${dateFilter}%22&keywords=${encodeURIComponent(queryKeywords)}&sortBy=%22date_posted%22&page=${currentPage}`;
             await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
             
@@ -227,8 +240,10 @@ async function scrapeLinkedInPosts(keywords, targetEmailsCount = 25) {
             });
 
             if (pagePosts.length === 0) {
-                console.log(`[Scraper] No posts found on page ${currentPage}. Ending pagination.`);
-                break;
+                console.log(`[Scraper] No posts found on page ${currentPage}. Continuing to check next pages...`);
+                const betweenPageWait = Math.floor(Math.random() * 3000) + 2000;
+                await page.waitForTimeout(betweenPageWait);
+                continue;
             }
 
             allPosts.push(...pagePosts);

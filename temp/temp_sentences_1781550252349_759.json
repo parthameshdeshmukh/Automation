@@ -1,0 +1,71 @@
+{
+  "isFallback": false,
+  "summary": {
+    "original": "Results-driven Full Stack Developer with 4+ years of hands-on experience designing, developing, and deploying scalable, secure, and cloud-native applications. Strong expertise in Python-based backend systems, modern frontend frameworks, microservices architecture, and DevOps automation.",
+    "tailored": "Results-driven Python Developer with 4+ years of hands-on experience designing, developing, and deploying high-performance applications, machine learning workflows, and scalable backend systems. Strong expertise in Python-based services, PyTorch deep learning models, C++ integration for performance optimization, and microservices architecture."
+  },
+  "stack_backend": {
+    "original": "Python, Flask, FastAPI, REST, Microservices, OOP, AsyncIO",
+    "tailored": "Python, C++, PyTorch, Flask, FastAPI, REST, Microservices, OOP, AsyncIO"
+  },
+  "stack_frontend": {
+    "original": "React, Angular, JS (ES6+), HTML5, CSS3, REST Integration",
+    "tailored": "React, Angular, JS (ES6+), HTML5, CSS3, REST Integration"
+  },
+  "stack_db": {
+    "original": "PostgreSQL, MySQL, MongoDB, Redis, Alembic",
+    "tailored": "PostgreSQL, MySQL, MongoDB, Redis, Alembic"
+  },
+  "stack_cloudops": {
+    "original": "AWS (EC2, S3, RDS, Lambda, ECS), Docker, Kubernetes (basics), Terraform, CI/CD",
+    "tailored": "AWS (EC2, S3, RDS, Lambda, ECS), Docker, Kubernetes, Terraform, CI/CD"
+  },
+  "stack_messaging": {
+    "original": "Kafka, Event-Driven Architecture",
+    "tailored": "Kafka, Event-Driven Architecture"
+  },
+  "stack_testing": {
+    "original": "Pytest, Unittest, JUnit, Postman",
+    "tailored": "Pytest, Unittest, Google Test (C++), Postman"
+  },
+  "stack_tools": {
+    "original": "Git, GitHub Actions, Jenkins, Swagger",
+    "tailored": "Git, GitHub Actions, Jenkins, CMake, Swagger"
+  },
+  "stack_security": {
+    "original": "OAuth2, JWT, OWASP, ELK, Prometheus, Grafana, CloudWatch",
+    "tailored": "OAuth2, JWT, OWASP, ELK, Prometheus, Grafana, CloudWatch"
+  },
+  "project1_bullet1": {
+    "original": "Developed backend product features for order, payment, and shipment services using Java, Golang, and Python (Flask), deploying containerized microservices via Docker and ECS with Terraform, following Infrastructure as Code best practices.",
+    "tailored": "Developed high-performance backend product features and data processing engines using Python (Flask) and C++ bindings, deploying containerized microservices via Docker and ECS with Terraform following Infrastructure as Code best practices."
+  },
+  "project1_bullet2": {
+    "original": "Architected asynchronous workflows using Redis queues and Apache Kafka to enable real-time fraud detection, payment confirmations, and inventory updates, mirroring Forage’s need for resilient, decoupled systems at scale.",
+    "tailored": "Architected asynchronous workflows using Redis queues and Apache Kafka to enable real-time ingestion pipelines for PyTorch deep learning model evaluation and real-time transaction tracking."
+  },
+  "project1_bullet3": {
+    "original": "Designed and version-controlled PostgreSQL schemas with Alembic, leveraging indexed read-heavy queries and Redis caching to reduce checkout flow latency by 45% during peak traffic.",
+    "tailored": "Designed and version-controlled PostgreSQL schemas with Alembic, optimizing read-heavy queries and caching strategies to reduce PyTorch inference pipeline database response latency by 45%."
+  },
+  "project1_bullet4": {
+    "original": "Instrumented service health and performance observability using Prometheus and Grafana, contributing to on-call rotation readiness and ensuring uptime across core transactional APIs.",
+    "tailored": "Instrumented model and service performance observability using Prometheus and Grafana, tracking PyTorch inference execution times and ensuring runtime reliability across core production APIs."
+  },
+  "project2_bullet1": {
+    "original": "Developed decentralized Ethereum-based smart contracts using Solidity and Truffle to manage user authentication, group memberships, and token-based reward systems.",
+    "tailored": "Developed high-performance core processing engines using C++ and Python to handle computationally intensive backend simulations and distributed transactional logic."
+  },
+  "project2_bullet2": {
+    "original": "Built a responsive front-end using React and Web3.js, integrating MetaMask to securely handle wallet-based login, transaction signing, and on-chain user interactions.",
+    "tailored": "Built a responsive analytics portal using React, integrating Python backend APIs to serve PyTorch-based predictive insights and securely handle user interactions."
+  },
+  "project2_bullet3": {
+    "original": "Enabled group forums and event announcements through smart contract state updates, allowing tamper-proof public posting.",
+    "tailored": "Optimized multi-threaded backend processes by leveraging C++ extensions within Python applications, allowing high-throughput data processing and lower memory footprints."
+  },
+  "project2_bullet4": {
+    "original": "Conducted end-to-end deployment and testing on Ethereum ensuring gas optimization and contract reliability.",
+    "tailored": "Conducted end-to-end benchmarking and profiling of PyTorch models and C++ modules, ensuring memory efficiency, GPU optimization, and backend deployment reliability."
+  }
+}
