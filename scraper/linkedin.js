@@ -75,7 +75,7 @@ async function scrapeLinkedInPosts(keywords, targetEmailsCount = 25) {
             
             console.log(`[Scraper] Searching for sanitized query: "${queryKeywords}"`);
 
-            const searchUrl = `https://www.linkedin.com/search/results/content/?datePosted=%22${dateFilter}%22&keywords=${encodeURIComponent(queryKeywords)}&sortBy=%22date_posted%22&page=${currentPage}`;
+            const searchUrl = `https://www.linkedin.com/search/results/content/?authorGeoUrn=%5B%22103644278%22%5D&datePosted=%22${dateFilter}%22&keywords=${encodeURIComponent(queryKeywords)}&sortBy=%22date_posted%22&page=${currentPage}`;
             await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
             
             // Wait briefly for results to populate
@@ -246,13 +246,69 @@ async function scrapeLinkedInPosts(keywords, targetEmailsCount = 25) {
                 continue;
             }
 
+            // Visit each and every post URL to extract full post text (JD) and direct contact
+            console.log(`[Scraper] Visiting each of the ${pagePosts.length} posts collected from page ${currentPage} to get full details...`);
+            for (let pIdx = 0; pIdx < pagePosts.length; pIdx++) {
+                const post = pagePosts[pIdx];
+                if (post.postUrl && post.postUrl !== 'Not available' && post.postUrl.startsWith('http')) {
+                    console.log(`[Scraper] [Post ${pIdx + 1}/${pagePosts.length}] Navigating to: ${post.postUrl}`);
+                    const postPage = await context.newPage();
+                    try {
+                        await postPage.goto(post.postUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+                        await postPage.waitForTimeout(2000); // Wait for content to settle
+
+                        // Click "See more" buttons to ensure full text extraction
+                        await postPage.evaluate(() => {
+                            const seeMoreButtons = document.querySelectorAll('button[class*="see-more"], .see-more-text, .feed-shared-inline-show-more-text__see-more-less-toggle');
+                            seeMoreButtons.forEach(btn => {
+                                if (btn && typeof btn.click === 'function') btn.click();
+                            });
+                        });
+                        await postPage.waitForTimeout(500);
+
+                        const fullText = await postPage.evaluate(() => {
+                            const selectors = [
+                                '[data-testid="expandable-text-box"]',
+                                '.feed-shared-update-v2__description',
+                                '[class*="update-v2__commentary"]',
+                                '.feed-shared-text',
+                                '.feed-shared-inline-show-more-text'
+                            ];
+                            for (const sel of selectors) {
+                                const el = document.querySelector(sel);
+                                if (el) {
+                                    const txt = (el.innerText || el.textContent || '').trim();
+                                    if (txt) return txt;
+                                }
+                            }
+                            const article = document.querySelector('article');
+                            if (article) return (article.innerText || article.textContent || '').trim();
+                            return document.body.innerText || document.body.textContent || '';
+                        });
+
+                        if (fullText && fullText.trim().length > 0) {
+                            console.log(`[Scraper] [Post ${pIdx + 1}] Successfully extracted full text (Length: ${fullText.length})`);
+                            post.text = fullText;
+                        }
+                    } catch (err) {
+                        console.warn(`[Scraper] [Post ${pIdx + 1}] Failed to visit post URL ${post.postUrl}:`, err.message);
+                    } finally {
+                        await postPage.close();
+                    }
+
+                    // Human-like delay between post visits
+                    const delay = Math.floor(Math.random() * 1500) + 1000;
+                    await page.waitForTimeout(delay);
+                }
+            }
+
             allPosts.push(...pagePosts);
             console.log(`[Scraper] Found ${pagePosts.length} posts on page ${currentPage}. Total so far: ${allPosts.length}`);
 
             // Check if we have gathered enough emails to satisfy the target
             const { extractEmails } = require('../utils/extractEmail');
             const mapped = allPosts.map(p => ({ ...p, keywords }));
-            const currentLeadsCount = extractEmails(mapped).length;
+            const currentLeadsCount = extractEmails(mapped).filter(l => l.email && l.email !== 'Not available').length;
             if (currentLeadsCount >= targetEmailsCount) {
                 console.log(`[Scraper] Reached target of ${targetEmailsCount} emails (found ${currentLeadsCount}) on page ${currentPage}. Stopping pagination.`);
                 break;

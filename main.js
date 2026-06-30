@@ -154,9 +154,9 @@ async function processCandidate(candidateName, candidateDir, sentHistory, failed
                 leads = JSON.parse(fs.readFileSync(candidateLeadsPath, 'utf8'));
                 if (candidateName === 'shilpa') {
                     leads = leads.map(l => ({
-                        email: l.email,
-                        jd: l.jd,
-                        postUrl: l.postUrl
+                        email: l.email || 'Not available',
+                        jd: l.jd || '',
+                        postUrl: l.postUrl || 'Not available'
                     }));
                 }
                 console.log(`[Main] [${candidateName}] Loaded ${leads.length} leads from JSON.`);
@@ -172,7 +172,7 @@ async function processCandidate(candidateName, candidateDir, sentHistory, failed
                 leads = []; // reset leads if forcing scrape
             }
             console.log(`[Main] [${candidateName}] Scraping LinkedIn for leads (Target: ${targetLeadsCount} leads, current: ${leads.length})...`);
-            
+
             for (const keywords of searchCriteria) {
                 const remainingTarget = targetLeadsCount - leads.length;
                 if (remainingTarget <= 0) {
@@ -198,13 +198,27 @@ async function processCandidate(candidateName, candidateDir, sentHistory, failed
                 const extractedData = extractEmails(mapped);
 
                 if (extractedData.length === 0) {
-                    console.log(`[Main] No email addresses extracted for keyword: ${keywords}`);
+                    console.log(`[Main] No leads found for keyword: ${keywords}`);
                     continue;
                 }
 
                 // Add unique leads (avoid duplicates)
                 for (const lead of extractedData) {
-                    if (!leads.some(l => l.email.toLowerCase() === lead.email.toLowerCase())) {
+                    const isDuplicate = leads.some(l => {
+                        const sameUrl = l.postUrl && lead.postUrl && 
+                                        l.postUrl !== 'Not available' && 
+                                        lead.postUrl !== 'Not available' && 
+                                        l.postUrl.toLowerCase() === lead.postUrl.toLowerCase();
+                        
+                        const sameEmail = l.email && lead.email && 
+                                          l.email !== 'Not available' && 
+                                          lead.email !== 'Not available' && 
+                                          l.email.toLowerCase() === lead.email.toLowerCase();
+                                          
+                        return sameUrl || sameEmail;
+                    });
+
+                    if (!isDuplicate) {
                         if (candidateName === 'shilpa') {
                             leads.push({
                                 email: lead.email,
@@ -234,9 +248,9 @@ async function processCandidate(candidateName, candidateDir, sentHistory, failed
                 leads = JSON.parse(fs.readFileSync(candidateLeadsPath, 'utf8'));
                 if (candidateName === 'shilpa') {
                     leads = leads.map(l => ({
-                        email: l.email,
-                        jd: l.jd,
-                        postUrl: l.postUrl
+                        email: l.email || 'Not available',
+                        jd: l.jd || '',
+                        postUrl: l.postUrl || 'Not available'
                     }));
                 }
                 console.log(`[Main] [${candidateName}] Loaded ${leads.length} leads from JSON.`);
@@ -275,6 +289,12 @@ async function processCandidate(candidateName, candidateDir, sentHistory, failed
         const jd = data.jd;
         const postUrl = data.postUrl;
         const keywords = data.keywords || (searchCriteria[0] || 'Software Engineer');
+
+        // Ensure we have a valid email address before sending
+        if (!email || email === 'Not available' || !email.includes('@')) {
+            console.log(`[Main] Skipping email delivery for post ${postUrl} because no valid recruiter email was extracted.`);
+            continue;
+        }
 
         const keywordSentCount = keywordSentCounts[keywords] || 0;
         if (keywordSentCount >= maxPerKeyword) {
@@ -374,7 +394,7 @@ async function processCandidate(candidateName, candidateDir, sentHistory, failed
                 console.log(`[Main] Sending email directly from Node.js using Gmail API...`);
                 await sendEmail(email, emailSubject, emailBodyHtml, finalResumePath, profile.email);
             }
-            
+
             // Increment count
             candidateSentCount++;
             keywordSentCounts[keywords] = (keywordSentCounts[keywords] || 0) + 1;
@@ -384,10 +404,10 @@ async function processCandidate(candidateName, candidateDir, sentHistory, failed
             saveDatabase(SENT_DB_PATH, sentHistory);
 
             // Add to our JD log so the user knows what they applied for
-            appliedJobsLog.push({ 
+            appliedJobsLog.push({
                 candidate: candidateName,
-                email: email, 
-                date: new Date().toISOString(), 
+                email: email,
+                date: new Date().toISOString(),
                 jd: jd,
                 postUrl: postUrl,
                 pdfPath: pdfPathForSheets,
@@ -399,7 +419,7 @@ async function processCandidate(candidateName, candidateDir, sentHistory, failed
             await logToGoogleSheets(email, jd, emailSubject, emailBodyHtml, pdfPathForSheets, postUrl);
         } catch (err) {
             console.error(`[Main] Skipping ${email} due to error:`, err.message);
-            
+
             // Add to failed database
             if (!failedEmails.includes(email)) {
                 failedEmails.push(email);

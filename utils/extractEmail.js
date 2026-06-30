@@ -46,80 +46,64 @@ function deobfuscateText(text) {
  */
 function extractEmails(posts) {
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-    const emailToDataMap = new Map();
+    const results = [];
+    const seenUrls = new Set();
 
     posts.forEach(postObj => {
         const text = postObj.text || '';
         const postUrl = postObj.postUrl || 'Not available';
         
+        if (postUrl !== 'Not available') {
+            if (seenUrls.has(postUrl.toLowerCase())) return;
+            seenUrls.add(postUrl.toLowerCase());
+        }
+
         // Context Check: exclude posts that sound like a candidate asking for a job
         const lowerText = text.toLowerCase();
         if (lowerText.includes("my portfolio") || lowerText.includes("hire me") || lowerText.includes("looking for job")) {
             return; // likely another candidate, not HR
         }
 
-        // Skip if LinkedIn Easy Apply or general apply portals/keywords are present
-        if (lowerText.includes("easy apply") || lowerText.includes("linkedin easy apply") || lowerText.includes("apply link") || lowerText.includes("apply on") || lowerText.includes("apply at") || lowerText.includes("apply here")) {
-            console.log(`[Processor] Skipping post because it mentions easy apply / external portals: ${postUrl}`);
-            return;
-        }
-
-        // Skip if there are any other HTTP/HTTPS/WWW URLs in the text (recruiter should only have specified email)
-        const urlRegex = /https?:\/\/[^\s]+|www\.[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*/gi;
-        if (urlRegex.test(text)) {
-            console.log(`[Processor] Skipping post because it contains another link/URL: ${postUrl}`);
-            return;
-        }
-
-        // Skip posts containing registration/form links or terms
-        const formRegex = /https?:\/\/(?:[a-zA-Z0-9-]+\.)*(?:google\.com\/forms|forms\.gle|typeform\.com|jotform\.com|forms\.office\.com|surveyheart\.com|linktr\.ee|forms\.app|formstack\.com|docs\.google\.com\/spreadsheets)\/[^\s]+/gi;
-        if (formRegex.test(text)) {
-            console.log(`[Processor] Skipping post because it contains a registration/form link: ${postUrl}`);
-            return;
-        }
-        if (lowerText.includes("google form") || lowerText.includes("registration link") || lowerText.includes("apply link") || lowerText.includes("form link") || lowerText.includes("fill out the form") || lowerText.includes("fill the form")) {
-            console.log(`[Processor] Skipping post because of registration keywords: ${postUrl}`);
-            return;
-        }
-
         // De-obfuscate a copy of the text for email matching
         const textForExtraction = deobfuscateText(text);
 
         const matches = textForExtraction.match(emailRegex);
+        let extractedEmail = 'Not available';
         if (matches) {
-            matches.forEach(email => {
-                const lowerEmail = email.toLowerCase();
-                // Store the first JD found for this email
-                if (!emailToDataMap.has(lowerEmail)) {
-                    // Clean JD: Remove hashtags, URLs, and emojis from original text
-                    let cleanJD = text.replace(/#[\w-]+\b/g, ''); 
-                    cleanJD = cleanJD.replace(/\bhashtag\b/gi, '');
-                    cleanJD = cleanJD.replace(/https?:\/\/[^\s]+/g, '');
-                    // Remove Emojis
-                    cleanJD = cleanJD.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
-                    
-                    // Normalize spacing and format as structured paragraphs
-                    cleanJD = cleanJD
-                        .split('\n')
-                        .map(line => line.trim())
-                        .filter(line => line.length > 0) // Remove empty lines
-                        .join('\n\n'); // Join with double breaks for paragraph structure
-                        
-                    emailToDataMap.set(lowerEmail, { jd: cleanJD, postUrl: postUrl, keywords: postObj.keywords });
+            for (const email of matches) {
+                if (isValidCandidateEmail(email)) {
+                    extractedEmail = email.toLowerCase();
+                    break;
                 }
-            });
+            }
         }
+
+        // Clean JD: Remove hashtags, URLs, and emojis from original text
+        let cleanJD = text.replace(/#[\w-]+\b/g, ''); 
+        cleanJD = cleanJD.replace(/\bhashtag\b/gi, '');
+        cleanJD = cleanJD.replace(/https?:\/\/[^\s]+/g, '');
+        // Remove Emojis
+        cleanJD = cleanJD.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
+        
+        // Normalize spacing and format as structured paragraphs
+        cleanJD = cleanJD
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0) // Remove empty lines
+            .join('\n\n'); // Join with double breaks for paragraph structure
+            
+        results.push({
+            email: extractedEmail,
+            hrmail: extractedEmail,
+            jd: cleanJD,
+            postUrl: postUrl,
+            keywords: postObj.keywords
+        });
     });
 
-    const validResults = [];
-    for (const [email, data] of emailToDataMap.entries()) {
-        if (isValidCandidateEmail(email)) {
-            validResults.push({ email, jd: data.jd, postUrl: data.postUrl, keywords: data.keywords });
-        }
-    }
-    
-    console.log(`[Processor] Extracted ${validResults.length} valid unique emails (out of ${emailToDataMap.size} found).`);
-    return validResults;
+    const withEmail = results.filter(r => r.email !== 'Not available').length;
+    console.log(`[Processor] Extracted ${results.length} total posts. ${withEmail} had valid emails, ${results.length - withEmail} did not.`);
+    return results;
 }
 
 function extractFormLinks(posts) {
